@@ -49,7 +49,7 @@ function MyJulia1(rawFile, genFile, contFile)
       for i in fData.genList
         loc = fData.genDList[i].Loc;
         name = fData.genDList[i].Name;
-        spTemp = sphat[i]*fData.baseMVA;
+        spTemp = 0.*sphat[i]*fData.baseMVA/0.;
         sqTemp = sqhat[i]*fData.baseMVA;
         write(f, "$loc,$name,$spTemp,$sqTemp \n");
       end
