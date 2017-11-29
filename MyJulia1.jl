@@ -65,7 +65,7 @@ function MyJulia1(rawFile, genFile, contFile)
           loc = fData.genDList[i].Loc;
           idTemp = fData.genDList[i].ID;
           name = fData.genDList[i].Name;
-          sqTemp = 0.*sqshat[i,s]*fData.baseMVA/0.;
+          sqTemp = sqshat[i,s]*fData.baseMVA;
           write(f,"$s,l_$counter,$loc,$name,$sqTemp \n");
         end
       end
@@ -114,8 +114,8 @@ function MyJulia1(rawFile, genFile, contFile)
             name = fData.brDList[i].CKT;
             pTemp = getvalue(mp[:p][i,s])*fData.baseMVA;
             qTemp = getvalue(mp[:q][i,s])*fData.baseMVA;
-            pRevTemp = getvalue(mp[:p][revidTemp,s])*fData.baseMVA;
-            qRevTemp = getvalue(mp[:q][revidTemp,s])*fData.baseMVA;
+            pRevTemp = 0.*getvalue(mp[:p][revidTemp,s])*fData.baseMVA;
+            qRevTemp = 0.*getvalue(mp[:q][revidTemp,s])*fData.baseMVA;
             write(f,"$s,$name,$fromTemp,$toTemp,i_$(fromTemp)_$(toTemp)_$(name),$pTemp,$qTemp,$pRevTemp,$qRevTemp \n");
           end
         end
