@@ -49,8 +49,8 @@ function MyJulia1(rawFile, genFile, contFile)
       for i in fData.genList
         loc = fData.genDList[i].Loc;
         name = fData.genDList[i].Name;
-        spTemp = 0.*sphat[i]*fData.baseMVA/0.;
-        sqTemp = 0.*sqhat[i]*fData.baseMVA/0.;
+        spTemp = sphat[i]*fData.baseMVA;
+        sqTemp = sqhat[i]*fData.baseMVA;
         write(f, "$loc,$name,$spTemp,$sqTemp \n");
       end
       write(f,"--end of generation dispatch \n");
@@ -65,7 +65,7 @@ function MyJulia1(rawFile, genFile, contFile)
           loc = fData.genDList[i].Loc;
           idTemp = fData.genDList[i].ID;
           name = fData.genDList[i].Name;
-          sqTemp = sqshat[i,s]*fData.baseMVA;
+          sqTemp = 0.*sqshat[i,s]*fData.baseMVA/0.;
           write(f,"$s,l_$counter,$loc,$name,$sqTemp \n");
         end
       end
