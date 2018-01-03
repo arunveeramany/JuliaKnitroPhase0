@@ -21,9 +21,10 @@ contFile=base * "contingency.csv";
 
 #-------------------------------------------------------------------------------
 #LOAD DATA FROM INPUT FILES
+#comment 'function...end' for offline testing
 #-------------------------------------------------------------------------------
 
-function MyJulia1(rawFile, genFile, contFile) 
+#function MyJulia1(rawFile, genFile, contFile) 
 
 # written by Haoxiang Yang, Northwestern University, 404-421-0638, haoxiangyang2019@u.northwestern.edu
 # modified by Stephen Elbert and Jesse Holzer, PNNL; Miles Lubin, Google
@@ -63,21 +64,7 @@ function MyJulia1(rawFile, genFile, contFile)
   contData = uData.contDList;
 
   # set up the model
-   mp = Model(solver = KnitroSolver(KTR_PARAM_OUTLEV=2,  # default is 2
-   			#feastol=2.25e-9, 
-   			#opttol=1e-4, 
-   			cg_maxit=10,   # formerly maxcgit
-   			maxit=4000,
-   			#ftol=1e-4,
-        	bar_initmu=0.12,
-   			maxtime_real=3600,
-   			algorithm=5,
-   			infeastol=1e-20,
-   			#ms_enable=1,
-   			#ms_deterministic =0,
-   			#par_numthreads =3,
-   			#par_msnumthreads =3
-   			)); 
+   mp = Model(solver = KnitroSolver(bar_initmu=0.12)); 
    			
   # create the variables for the base case
   @variable(mp,bData[i].Vmin <= v0[i in bList] <= bData[i].Vmax);
@@ -201,8 +188,6 @@ end
 #------------------------------------------------------------------------------------------
     sphat = getvalue(mp[:sp0]);
     sqhat = getvalue(mp[:sq0]);
-    #spshat = getvalue(mp[:sp]);
-    #sqshat = getvalue(mp[:sq]);
     costhat = getobjectivevalue(mp);
 #------------------------------------------------------------------------------------------
     
@@ -219,14 +204,9 @@ end
         sqTemp = sqhat[i]*fData.baseMVA;
         write(f, "$loc,$name,$spTemp,$sqTemp \n");
       end
-      write(f,"--end of generation dispatch \n");
-    end
-
-    open("solution2.txt","w") do f
-      write(f, "--contingency generator \nconID,genID,busID,unitID,q(MW) \n");
-      write(f,"--end of line flow \n")
+      #write(f,"--end of generation dispatch \n");
     end
 #------------------------------------------------------------------------------------------
 
 
-end
+#end
