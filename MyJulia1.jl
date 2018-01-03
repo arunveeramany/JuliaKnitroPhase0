@@ -206,3 +206,25 @@ end
     costhat = getobjectivevalue(mp);
 #------------------------------------------------------------------------------------------
     
+    
+#------------------------------------------------------------------------------------------
+#WRITE SOLUTION FILES
+#------------------------------------------------------------------------------------------
+   open("solution1.txt","w") do f
+      write(f, "--generation dispatch \nbus id,unit id,pg(MW),qg(MVar) \n");
+      for i in fData.genList
+        loc = fData.genDList[i].Loc;
+        name = fData.genDList[i].Name;
+        spTemp = sphat[i]*fData.baseMVA;
+        sqTemp = sqhat[i]*fData.baseMVA;
+        write(f, "$loc,$name,$spTemp,$sqTemp \n");
+      end
+      write(f,"--end of generation dispatch \n");
+    end
+
+    open("solution2.txt","w") do f
+      write(f, "--contingency generator \nconID,genID,busID,unitID,q(MW) \n");
+      write(f,"--end of line flow \n")
+    end
+#------------------------------------------------------------------------------------------
+    
