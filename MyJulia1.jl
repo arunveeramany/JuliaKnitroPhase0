@@ -203,9 +203,9 @@ end
         spTemp = sphat[i]*fData.baseMVA;
         sqTemp = sqhat[i]*fData.baseMVA;
         write(f, "$loc,$name,$spTemp,$sqTemp \n");
-      end
-      #write(f,"--end of generation dispatch \n");
-    end
+      end;
+      write(f,"--end of generation dispatch \n");
+    end;
 #------------------------------------------------------------------------------------------
 
 
