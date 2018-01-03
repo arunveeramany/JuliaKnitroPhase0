@@ -97,7 +97,7 @@ end
 
 #-------------------------------------------------------------------------------
 # EQNS 22, 24	OHM'S LAW
-# EQNS 23, 25 	REVERSE OF ABOVE CAUSE INFEASIBILITY, UNIMPLEMENTED
+# EQNS 23, 25 	REVERSE OF ABOVE CAUSES INFEASIBILITY, UNIMPLEMENTED
 # EQ 29			THETA BOUNDS
 #-------------------------------------------------------------------------------
 @NLconstraint(mp,pFlow0[k in brList], 
