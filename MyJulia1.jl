@@ -7,7 +7,7 @@ include("buildMod.jl");
 
 
 #-------------------------------------------------------------------------------
-#INPUTS
+#INPUTS (FOR OFFLINE TESTING)
 #-------------------------------------------------------------------------------
 base = "/home/svcarpacomp/data/105/Phase_0_RTS96/scenario_1/"
 base = "/data/105/Phase_0_RTS96/scenario_1/"
@@ -23,7 +23,7 @@ contFile=base * "contingency.csv";
 #LOAD DATA FROM INPUT FILES
 #-------------------------------------------------------------------------------
 
-#function MyJulia1(rawFile, genFile, contFile) 
+function MyJulia1(rawFile, genFile, contFile) 
 
 # written by Haoxiang Yang, Northwestern University, 404-421-0638, haoxiangyang2019@u.northwestern.edu
 # modified by Stephen Elbert and Jesse Holzer, PNNL; Miles Lubin, Google
