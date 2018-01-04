@@ -10,7 +10,7 @@ include("buildMod.jl");
 #INPUTS (FOR OFFLINE TESTING)
 #-------------------------------------------------------------------------------
 base = "/home/svcarpacomp/data/105/Phase_0_RTS96/scenario_1/"
-base = "/data/105/Phase_0_RTS96/scenario_1/"
+base = "/data/105/Phase_0_RTS96/scenario_45/"
 #base = "/data/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
 
 rawFile =base * "powersystem.raw";
@@ -158,7 +158,7 @@ end
 #COMPLEMENTARITY ---- FEASIBLE BUT INSIGNIFICANT 
 #------------------------------------------------------------------------------------------
 for i in gList
-  @complements(mp,v0[i[1]], gData[i].Qmin <= sq0[i] <= gData[i].Qmax);
+#  @complements(mp,v0[i[1]], gData[i].Qmin <= sq0[i] <= gData[i].Qmax);
 end
 #------------------------------------------------------------------------------------------
 
@@ -168,8 +168,8 @@ end
 # OBJECTIVE FUNCTION
 #------------------------------------------------------------------------------------------
 @variable(mp, CF); #STE
-@NLconstraint(mp, CF == sum(sum(gData[l].cParams[n]*(sp0[l]*fData.baseMVA)^n for n in gData[l].cn ) for l in gList if gData[l].Pmin<gData[l].Pmax)     #STE
-                       + sum(sum(gData[l].cParams[n]*(gData[l].Pmin*fData.baseMVA)^n for n in gData[l].cn ) for l in gList if gData[l].Pmin==gData[l].Pmax) 
+@NLconstraint(mp, CF == sum(sum(gData[l].cParams[n]*(sp0[l]*fData.baseMVA)^n for n in gData[l].cn )        for l in gList if gData[l].Pmin<gData[l].Pmax)     #STE
+                      + sum(sum(gData[l].cParams[n]*(gData[l].Pmin*fData.baseMVA)^n for n in gData[l].cn ) for l in gList if gData[l].Pmin==gData[l].Pmax) 
                         ); 
 @NLobjective(mp, Min, CF);  #STE needed to avoid error for RTS96
 #------------------------------------------------------------------------------------------
