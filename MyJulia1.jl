@@ -168,7 +168,6 @@ if contingency_case == true
 	@variable(mp, gData[l].Qmin <= sq[l in gList] <= gData[l].Qmax);
 	
 	for i in gList
-	  bus = i[1]
 	  @complements(mp, v1[i] - v2[i], gData[i].Qmin <= sq[i] <= gData[i].Qmax)
 	end
 	
