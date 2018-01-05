@@ -11,7 +11,7 @@ include("buildMod.jl");
 #-------------------------------------------------------------------------------
 base = "/home/svcarpacomp/data/105/Phase_0_RTS96/scenario_1/"
 base = "/data/105/Phase_0_RTS96/scenario_45/"
-#base = "/data/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
+base = "/data/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
 
 rawFile =base * "powersystem.raw";
 genFile =base * "generator.csv";
@@ -63,6 +63,16 @@ contFile=base * "contingency.csv";
   S = uData.contList;
   contData = uData.contDList;
 
+#-------------------------------------------------------------------------------
+#LOOP THROUGH CONTINGENCY CASES
+#-------------------------------------------------------------------------------
+
+contingency_cases = Bool[false, true];
+contingency_case  = false;
+v0_bak = [];
+
+for contingency_case in contingency_cases
+
   # set up the model
    mp = Model(solver = KnitroSolver(bar_initmu=0.12)); 
    			
@@ -78,21 +88,17 @@ contFile=base * "contingency.csv";
 #-------------------------------------------------------------------------------
 
 
-
 #-------------------------------------------------------------------------------
 #REMOVE CONTINGENCY ELEMENTS (BRANCHES FOR NOW) - FEASIBLE BUT INSIGNIFICANT
 #-------------------------------------------------------------------------------
-considerContingencies = true;
-
-if considerContingencies==true
-	for c in values(contDList)
-			println("Deleting branch...",c)
-			for i in 1:2 delete!( brData, [c.Loc[i]] ); end
-			for i in 1:2 deleteat!( brList,findin(brList,[c.Loc[i]] )); end
+	if contingency_case == true
+		for c in values(contDList)
+				println("Deleting branch...",c)
+				for i in 1:2 delete!( brData, [c.Loc[i]] ); end
+				for i in 1:2 deleteat!( brList,findin(brList,[c.Loc[i]] )); end
+		end
 	end
-end
 #-------------------------------------------------------------------------------
-
 
 
 #-------------------------------------------------------------------------------
@@ -153,12 +159,20 @@ end
 #@NLconstraint(mp,qShunt0[i in bList],qsh0[i] == -bData[i].bsh*v0[i]^2);
 #------------------------------------------------------------------------------------------
 
-
 #------------------------------------------------------------------------------------------
-#COMPLEMENTARITY ---- FEASIBLE BUT INSIGNIFICANT 
+#COMPLEMENTARITY ---- CONTINGENCY CASE ONLY --- FEASIBLE BUT INSIGNIFICANT 
 #------------------------------------------------------------------------------------------
-for i in gList
-#  @complements(mp,v0[i[1]], gData[i].Qmin <= sq0[i] <= gData[i].Qmax);
+if contingency_case == true
+	@variable(mp, vx[i in gList] >= 0);
+	@variable(mp, v1[i in gList] >= 0);
+	@variable(mp, v2[i in gList] >= 0);
+	@variable(mp, gData[l].Qmin <= sq[l in gList] <= gData[l].Qmax);
+	
+	for i in gList
+	  bus = i[1]
+	  @complements(mp, v1[i] - v2[i], gData[i].Qmin <= sq[i] <= gData[i].Qmax)
+	end
+    @constraint(mp, vConstr[i in gList], v0_bak[i[1]] + vx[i] ==  v1[i] - v2[i]);
 end
 #------------------------------------------------------------------------------------------
 
@@ -189,24 +203,17 @@ end
     sphat = getvalue(mp[:sp0]);
     sqhat = getvalue(mp[:sq0]);
     costhat = getobjectivevalue(mp);
-#------------------------------------------------------------------------------------------
     
+    v0_bak = getvalue(mp[:v0]);
+#------------------------------------------------------------------------------------------
+
+end	#contigency_case for loop   
     
 #------------------------------------------------------------------------------------------
 #WRITE SOLUTION FILES
 #------------------------------------------------------------------------------------------
-   open("solution1.txt","w") do f
-      write(f, "--generation dispatch \nbus id,unit id,pg(MW),qg(MVar) \n");
-      for i in fData.genList
-        loc = fData.genDList[i].Loc;
-        name = fData.genDList[i].Name;
-        spTemp = sphat[i]*fData.baseMVA;
-        sqTemp = sqhat[i]*fData.baseMVA;
-        write(f, "$loc,$name,$spTemp,$sqTemp \n");
-      end;
-      write(f,"--end of generation dispatch \n");
-    end;
+
 #------------------------------------------------------------------------------------------
 
 
-#end
+#end		#end build function, commented for offline testing
