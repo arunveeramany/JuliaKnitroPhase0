@@ -68,7 +68,6 @@ contFile=base * "contingency.csv";
 #-------------------------------------------------------------------------------
 
 contingency_cases = Bool[false, true];
-contingency_case  = false;
 v0_bak = [];
 
 for contingency_case in contingency_cases
