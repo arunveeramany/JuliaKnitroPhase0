@@ -10,8 +10,8 @@ include("buildMod.jl");
 #INPUTS (FOR OFFLINE TESTING)
 #-------------------------------------------------------------------------------
 base = "/home/svcarpacomp/data/105/Phase_0_RTS96/scenario_1/"
-base = "/data/105/Phase_0_RTS96/scenario_45/"
-#base = "/data/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
+#base = "/data/105/Phase_0_RTS96/scenario_45/"
+base = "/data/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
 
 rawFile =base * "powersystem.raw";
 genFile =base * "generator.csv";
@@ -145,9 +145,9 @@ for contingency_case in contingency_cases
 
 
 #------------------------------------------------------------------------------------------
-#APPARENT FLOW BOUND --- CAUSES INFEASIBILITY
+#APPARENT FLOW BOUND --- UNDO baseMVA^2 - FEASIBLE 
 #------------------------------------------------------------------------------------------
-#@NLconstraint(mp,flowBound0[k in brList],p0[k]^2 + q0[k]^2 <= brData[k].t^2);
+@NLconstraint(mp,flowBound0[k in brList],p0[k]^2 + q0[k]^2 <= fData.baseMVA^2 * brData[k].t^2);
 #------------------------------------------------------------------------------------------
 
 
