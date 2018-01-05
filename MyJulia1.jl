@@ -27,7 +27,7 @@ contFile=base * "contingency.csv";
 #function MyJulia1(rawFile, genFile, contFile) 
 
 # written by Haoxiang Yang, Northwestern University, 404-421-0638, haoxiangyang2019@u.northwestern.edu
-# modified by Stephen Elbert and Jesse Holzer, PNNL; Miles Lubin, Google
+# modified by Stephen Elbert, Jesse Holzer and Arun Veeramany, PNNL; Miles Lubin, Google
    
     println("RAW file: ",rawFile)
     println("gen file: ",genFile)
