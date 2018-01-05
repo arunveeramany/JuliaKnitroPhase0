@@ -11,7 +11,7 @@ include("buildMod.jl");
 #-------------------------------------------------------------------------------
 base = "/home/svcarpacomp/data/105/Phase_0_RTS96/scenario_1/"
 base = "/data/105/Phase_0_RTS96/scenario_45/"
-base = "/data/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
+#base = "/data/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
 
 rawFile =base * "powersystem.raw";
 genFile =base * "generator.csv";
@@ -162,7 +162,7 @@ for contingency_case in contingency_cases
 #COMPLEMENTARITY ---- CONTINGENCY CASE ONLY --- FEASIBLE BUT INSIGNIFICANT 
 #------------------------------------------------------------------------------------------
 if contingency_case == true
-	@variable(mp, vx[i in gList] >= 0);
+	@variable(mp, bData[i[1]].Vmin <= vx[i in gList] <= bData[i[1]].Vmax);
 	@variable(mp, v1[i in gList] >= 0);
 	@variable(mp, v2[i in gList] >= 0);
 	@variable(mp, gData[l].Qmin <= sq[l in gList] <= gData[l].Qmax);
@@ -171,6 +171,7 @@ if contingency_case == true
 	  bus = i[1]
 	  @complements(mp, v1[i] - v2[i], gData[i].Qmin <= sq[i] <= gData[i].Qmax)
 	end
+	
     @constraint(mp, vConstr[i in gList], v0_bak[i[1]] + vx[i] ==  v1[i] - v2[i]);
 end
 #------------------------------------------------------------------------------------------
