@@ -69,6 +69,10 @@ contFile=base * "contingency.csv";
 
 contingency_cases = Bool[false, true];
 v0_base = [];
+sp0_base = [];
+sq0_base = [];
+theta0_base = [];
+costhat_base = 0;
 
 for contingency_case in contingency_cases
 
@@ -160,6 +164,7 @@ for contingency_case in contingency_cases
 
 #------------------------------------------------------------------------------------------
 #COMPLEMENTARITY ---- CONTINGENCY CASE ONLY --- FEASIBLE BUT INSIGNIFICANT 
+#MODIFY TO CONSIDER ONE CONTINGENCY AT A TIME
 #------------------------------------------------------------------------------------------
 if contingency_case == true
 	@variable(mp, bData[i[1]].Vmin <= vx[i in gList] <= bData[i[1]].Vmax);
@@ -216,19 +221,84 @@ end
 	    end
 	        
     	v0_base = getvalue(mp[:v0]);		#------backup base case solution
+    	sp0_base = getvalue(mp[:sp0]);
+		sq0_base = getvalue(mp[:sq0]);
+		theta0_base = getvalue(mp[:theta0]);
+		costhat_base = getobjectivevalue(mp);
+    elseif contingency_case == true
+		open("solution2.txt","w") do f
+		      write(f, "--contingency generator \nconID,genID,busID,unitID,q(MW) \n");
+		      for s in uData.contList
+		        counter = 0;
+		        for i in fData.genList
+		          counter += 1;
+		          loc = fData.genDList[i].Loc;
+		          idTemp = fData.genDList[i].ID;
+		          name = fData.genDList[i].Name;
+		          sqTemp = sqhat[i]*fData.baseMVA;
+		          write(f,"$s,l_$counter,$loc,$name,$sqTemp \n");
+		        end
+		      end
+		      write(f,"--end of contingency generator \n--bus \ncontingency id,bus id,v(pu),theta(deg) \n");
+		      for i in fData.busList
+		        id = fData.busDList[i].ID;
+		        name = fData.busDList[i].Name;
+		        vTemp = v0_base[i];
+		        thetaTemp = getvalue(theta0_base[i]/pi*180);
+		        write(f,"0,$id,$vTemp,$thetaTemp \n");
+		      end
+		      for s in uData.contList
+		        for i in fData.busList
+		          id = fData.busDList[i].ID;
+		          name = fData.busDList[i].Name;
+		          vTemp = getvalue(mp[:v0][i]);
+		          thetaTemp = getvalue(mp[:theta][i,s]/pi*180);
+		          write(f,"$s,$id,$vTemp,$thetaTemp \n");
+		        end
+		      end
+		      write(f,"--end of bus \n--Delta \ncontingency id,Delta(MW) \n");
+		      for s in uData.contList
+		        pdeltaTemp = getvalue(mp[:pdelta][s])*fData.baseMVA;
+		        write(f,"$s,$pdeltaTemp \n");
+		      end
+		      write(f,"--end of Delta \n--line flow \ncontingency id,line id,origin bus id,destination bus id,circuit id,p_origin(MW),q_origin(MVar),p_destination(MW),q_destination(MVar) \n");
+		      for i in fData.brListSingle
+		        idTemp = fData.brDList[i].ID;
+		        revidTemp = fData.brDList[i].revID;
+		        fromTemp = fData.brDList[i].From;
+		        toTemp = fData.brDList[i].To;
+		        name = fData.brDList[i].CKT;
+		        pTemp = getvalue(mp[:p0][i])*fData.baseMVA;
+		        qTemp = getvalue(mp[:q0][i])*fData.baseMVA;
+		        pRevTemp = getvalue(mp[:p0][revidTemp])*fData.baseMVA;
+		        qRevTemp = getvalue(mp[:q0][revidTemp])*fData.baseMVA;
+		        write(f,"0,$name,$fromTemp,$toTemp,i_$(fromTemp)_$(toTemp)_$(name),$pTemp,$qTemp,$pRevTemp,$qRevTemp \n");
+		      end
+		      for s in uData.contList
+		        for i in fData.brListSingle
+		          if !(i in contDList[s].Loc)
+		            idTemp = fData.brDList[i].ID;
+		            revidTemp = fData.brDList[i].revID;
+		            fromTemp = fData.brDList[i].From;
+		            toTemp = fData.brDList[i].To;
+		            name = fData.brDList[i].CKT;
+		            pTemp = getvalue(mp[:p][i,s])*fData.baseMVA;
+		            qTemp = getvalue(mp[:q][i,s])*fData.baseMVA;
+		            pRevTemp = getvalue(mp[:p][revidTemp,s])*fData.baseMVA;
+		            qRevTemp = getvalue(mp[:q][revidTemp,s])*fData.baseMVA;
+		            write(f,"$s,$name,$fromTemp,$toTemp,i_$(fromTemp)_$(toTemp)_$(name),$pTemp,$qTemp,$pRevTemp,$qRevTemp \n");
+		          end
+		        end
+		      end
+		      write(f,"--end of line flow \n")
+		    end
+    
     end
     
-    costhat = getobjectivevalue(mp);
     
+   
 #------------------------------------------------------------------------------------------
 
 end	#contigency_case for loop   
-    
-#------------------------------------------------------------------------------------------
-#WRITE SOLUTION FILES
-#------------------------------------------------------------------------------------------
-
-#------------------------------------------------------------------------------------------
-
 
 #end		#end build function, commented for offline testing
