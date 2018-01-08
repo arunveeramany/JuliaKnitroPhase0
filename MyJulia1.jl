@@ -10,8 +10,8 @@ include("buildMod.jl");
 #INPUTS (FOR OFFLINE TESTING)
 #-------------------------------------------------------------------------------
 base = "/home/svcarpacomp/data/105/Phase_0_RTS96/scenario_1/"
-#base = "/data/105/Phase_0_RTS96/scenario_45/"
-base = "/data/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
+base = "/data/105/Phase_0_RTS96/scenario_45/"
+#base = "/data/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
 
 rawFile =base * "powersystem.raw";
 genFile =base * "generator.csv";
@@ -68,7 +68,7 @@ contFile=base * "contingency.csv";
 #-------------------------------------------------------------------------------
 
 contingency_cases = Bool[false, true];
-v0_bak = [];
+v0_base = [];
 
 for contingency_case in contingency_cases
 
@@ -145,14 +145,14 @@ for contingency_case in contingency_cases
 
 
 #------------------------------------------------------------------------------------------
-#APPARENT FLOW BOUND --- UNDO baseMVA^2 - FEASIBLE 
+#EQNS 43,44 MERGED - APPARENT FLOW BOUND --- UNDO baseMVA^2 - FEASIBLE 
 #------------------------------------------------------------------------------------------
 @NLconstraint(mp,flowBound0[k in brList],p0[k]^2 + q0[k]^2 <= fData.baseMVA^2 * brData[k].t^2);
 #------------------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------------------
-#SHUNTS --- CAUSES INFEASIBILITY
+#SHUNTS --- CAUSES INFEASIBILITY --- gsh ZERO
 #------------------------------------------------------------------------------------------
 #@NLconstraint(mp,pShunt0[i in bList],psh0[i] == bData[i].gsh*v0[i]^2);
 #@NLconstraint(mp,qShunt0[i in bList],qsh0[i] == -bData[i].bsh*v0[i]^2);
@@ -171,7 +171,7 @@ if contingency_case == true
 	  @complements(mp, v1[i] - v2[i], gData[i].Qmin <= sq[i] <= gData[i].Qmax)
 	end
 	
-    @constraint(mp, vConstr[i in gList], v0_bak[i[1]] + vx[i] ==  v1[i] - v2[i]);
+    @constraint(mp, vConstr[i in gList], v0_base[i[1]] + vx[i] ==  v1[i] - v2[i]);
 end
 #------------------------------------------------------------------------------------------
 
@@ -203,7 +203,7 @@ end
     sqhat = getvalue(mp[:sq0]);
     costhat = getobjectivevalue(mp);
     
-    v0_bak = getvalue(mp[:v0]);
+    v0_base = getvalue(mp[:v0]);
 #------------------------------------------------------------------------------------------
 
 end	#contigency_case for loop   
