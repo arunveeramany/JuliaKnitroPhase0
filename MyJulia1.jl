@@ -201,9 +201,25 @@ end
 #------------------------------------------------------------------------------------------
     sphat = getvalue(mp[:sp0]);
     sqhat = getvalue(mp[:sq0]);
+    
+    if contingency_case == false
+	  open("solution1.txt","w") do f
+	      write(f, "--generation dispatch \nbus id,unit id,pg(MW),qg(MVar) \n");
+	      for i in fData.genList
+	        loc = fData.genDList[i].Loc;
+	        name = fData.genDList[i].Name;
+	        spTemp = sphat[i]*fData.baseMVA;
+	        sqTemp = sqhat[i]*fData.baseMVA;
+	        write(f, "$loc,$name,$spTemp,$sqTemp \n");
+	      end
+	      write(f,"--end of generation dispatch \n");
+	    end
+	        
+    	v0_base = getvalue(mp[:v0]);		#------backup base case solution
+    end
+    
     costhat = getobjectivevalue(mp);
     
-    v0_base = getvalue(mp[:v0]);
 #------------------------------------------------------------------------------------------
 
 end	#contigency_case for loop   
