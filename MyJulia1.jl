@@ -1,5 +1,6 @@
 using Complementarity;
 using JuMP;
+#using Ipopt;
 
 include("def.jl");
 include("dProc.jl");
@@ -9,9 +10,10 @@ include("buildMod.jl");
 #-------------------------------------------------------------------------------
 #INPUTS (FOR OFFLINE TESTING)
 #-------------------------------------------------------------------------------
-base = "/home/svcarpacomp/data/105/Phase_0_RTS96/scenario_1/"
-base = "/data/105/Phase_0_RTS96/scenario_45/"
-#base = "/data/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
+basedata = "/home/svcarpacomp/data"
+basedata = "/data"
+#base = basedata * "/105/Phase_0_RTS96/scenario_45/"
+base = basedata * "/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
 
 rawFile =base * "powersystem.raw";
 genFile =base * "generator.csv";
@@ -49,7 +51,7 @@ contFile=base * "contingency.csv";
   # fData - grid data with all parameters
   # uData - contingency data
 
-  # readin the data from the structure
+  # reading data from the structure
   baseMVA = fData.baseMVA;
   bList = fData.busList;
   bData = fData.busDList;
@@ -62,22 +64,34 @@ contFile=base * "contingency.csv";
 
   S = uData.contList;
   contData = uData.contDList;
+  
+
+sol2file = open("solution2.txt","w") 
+sol2gen = String[]
+sol2bus = String[]
+sol2branch = String[]
 
 #-------------------------------------------------------------------------------
 #LOOP THROUGH CONTINGENCY CASES
 #-------------------------------------------------------------------------------
 
-contingency_cases = Bool[false, true];
+contingency_cases = collect(0:1);
 v0_base = [];
+p0_base = [];
+q0_base = [];
 sp0_base = [];
 sq0_base = [];
 theta0_base = [];
 costhat_base = 0;
 
+brData_backup = copy(brData);
+brList_backup = copy(brList);
+
 for contingency_case in contingency_cases
 
   # set up the model
    mp = Model(solver = KnitroSolver(bar_initmu=0.12)); 
+   #mp = Model(solver = IpoptSolver());
    			
   # create the variables for the base case
   @variable(mp,bData[i].Vmin <= v0[i in bList] <= bData[i].Vmax);
@@ -90,16 +104,19 @@ for contingency_case in contingency_cases
   @variable(mp,theta0[i in bList]);
 #-------------------------------------------------------------------------------
 
-
 #-------------------------------------------------------------------------------
 #REMOVE CONTINGENCY ELEMENTS (BRANCHES FOR NOW) - FEASIBLE BUT INSIGNIFICANT
 #-------------------------------------------------------------------------------
-	if contingency_case == true
-		for c in values(contDList)
-				println("Deleting branch...",c)
-				for i in 1:2 delete!( brData, [c.Loc[i]] ); end
-				for i in 1:2 deleteat!( brList,findin(brList,[c.Loc[i]] )); end
-		end
+
+	if contingency_case > 0
+	
+		brData = brData_backup;
+		brList = brList_backup;
+	
+		c = contDList[ contingency_case ];
+		println("Deleting branch...",c)
+		for i in 1:2 delete!( brData, [c.Loc[i]] ); end
+		#for i in 1:2 deleteat!( brList,findin(brList,[c.Loc[i]] )); end
 	end
 #-------------------------------------------------------------------------------
 
@@ -166,7 +183,7 @@ for contingency_case in contingency_cases
 #COMPLEMENTARITY ---- CONTINGENCY CASE ONLY --- FEASIBLE BUT INSIGNIFICANT 
 #MODIFY TO CONSIDER ONE CONTINGENCY AT A TIME
 #------------------------------------------------------------------------------------------
-if contingency_case == true
+if contingency_case > 0
 	@variable(mp, bData[i[1]].Vmin <= vx[i in gList] <= bData[i[1]].Vmax);
 	@variable(mp, v1[i in gList] >= 0);
 	@variable(mp, v2[i in gList] >= 0);
@@ -176,7 +193,7 @@ if contingency_case == true
 	  @complements(mp, v1[i] - v2[i], gData[i].Qmin <= sq[i] <= gData[i].Qmax)
 	end
 	
-    @constraint(mp, vConstr[i in gList], v0_base[i[1]] + vx[i] ==  v1[i] - v2[i]);
+    #@constraint(mp, vConstr[i in gList], v0_base[i[1]] + vx[i] ==  v1[i] - v2[i]);
 end
 #------------------------------------------------------------------------------------------
 
@@ -206,8 +223,10 @@ end
 #------------------------------------------------------------------------------------------
     sphat = getvalue(mp[:sp0]);
     sqhat = getvalue(mp[:sq0]);
-    
-    if contingency_case == false
+    v0hat = 	getvalue(mp[:v0]);
+#    theta0hat = getvalue(mp[:theta0]/pi*180.0);
+
+if contingency_case == 0
 	  open("solution1.txt","w") do f
 	      write(f, "--generation dispatch \nbus id,unit id,pg(MW),qg(MVar) \n");
 	      for i in fData.genList
@@ -225,80 +244,95 @@ end
 		sq0_base = getvalue(mp[:sq0]);
 		theta0_base = getvalue(mp[:theta0]);
 		costhat_base = getobjectivevalue(mp);
-    elseif contingency_case == true
-		open("solution2.txt","w") do f
-		      write(f, "--contingency generator \nconID,genID,busID,unitID,q(MW) \n");
-		      for s in uData.contList
-		        counter = 0;
-		        for i in fData.genList
-		          counter += 1;
-		          loc = fData.genDList[i].Loc;
-		          idTemp = fData.genDList[i].ID;
-		          name = fData.genDList[i].Name;
-		          sqTemp = sqhat[i]*fData.baseMVA;
-		          write(f,"$s,l_$counter,$loc,$name,$sqTemp \n");
-		        end
-		      end
-		      write(f,"--end of contingency generator \n--bus \ncontingency id,bus id,v(pu),theta(deg) \n");
-		      for i in fData.busList
-		        id = fData.busDList[i].ID;
-		        name = fData.busDList[i].Name;
-		        vTemp = v0_base[i];
-		        thetaTemp = getvalue(theta0_base[i]/pi*180);
-		        write(f,"0,$id,$vTemp,$thetaTemp \n");
-		      end
-		      for s in uData.contList
-		        for i in fData.busList
-		          id = fData.busDList[i].ID;
-		          name = fData.busDList[i].Name;
-		          vTemp = getvalue(mp[:v0][i]);
-		          thetaTemp = getvalue(mp[:theta][i,s]/pi*180);
-		          write(f,"$s,$id,$vTemp,$thetaTemp \n");
-		        end
-		      end
-		      write(f,"--end of bus \n--Delta \ncontingency id,Delta(MW) \n");
-		      for s in uData.contList
-		        pdeltaTemp = getvalue(mp[:pdelta][s])*fData.baseMVA;
-		        write(f,"$s,$pdeltaTemp \n");
-		      end
-		      write(f,"--end of Delta \n--line flow \ncontingency id,line id,origin bus id,destination bus id,circuit id,p_origin(MW),q_origin(MVar),p_destination(MW),q_destination(MVar) \n");
-		      for i in fData.brListSingle
-		        idTemp = fData.brDList[i].ID;
-		        revidTemp = fData.brDList[i].revID;
-		        fromTemp = fData.brDList[i].From;
-		        toTemp = fData.brDList[i].To;
-		        name = fData.brDList[i].CKT;
-		        pTemp = getvalue(mp[:p0][i])*fData.baseMVA;
-		        qTemp = getvalue(mp[:q0][i])*fData.baseMVA;
-		        pRevTemp = getvalue(mp[:p0][revidTemp])*fData.baseMVA;
-		        qRevTemp = getvalue(mp[:q0][revidTemp])*fData.baseMVA;
-		        write(f,"0,$name,$fromTemp,$toTemp,i_$(fromTemp)_$(toTemp)_$(name),$pTemp,$qTemp,$pRevTemp,$qRevTemp \n");
-		      end
-		      for s in uData.contList
-		        for i in fData.brListSingle
-		          if !(i in contDList[s].Loc)
-		            idTemp = fData.brDList[i].ID;
-		            revidTemp = fData.brDList[i].revID;
-		            fromTemp = fData.brDList[i].From;
-		            toTemp = fData.brDList[i].To;
-		            name = fData.brDList[i].CKT;
-		            pTemp = getvalue(mp[:p][i,s])*fData.baseMVA;
-		            qTemp = getvalue(mp[:q][i,s])*fData.baseMVA;
-		            pRevTemp = getvalue(mp[:p][revidTemp,s])*fData.baseMVA;
-		            qRevTemp = getvalue(mp[:q][revidTemp,s])*fData.baseMVA;
-		            write(f,"$s,$name,$fromTemp,$toTemp,i_$(fromTemp)_$(toTemp)_$(name),$pTemp,$qTemp,$pRevTemp,$qRevTemp \n");
-		          end
-		        end
-		      end
-		      write(f,"--end of line flow \n")
-		    end
-    
-    end
-    
-    
+		p0_base = getvalue(mp[:p0]);
+		q0_base = getvalue(mp[:q0]);
+		
+else
+	counter=0
+	 for i in fData.genList
+          counter += 1;
+          loc = fData.genDList[i].Loc;
+          idTemp = fData.genDList[i].ID;
+          name = fData.genDList[i].Name;
+          sqTemp = sqhat[i]*fData.baseMVA;
+          push!(sol2gen, "$contingency_case,l_$counter,$loc,$name,$sqTemp \n")
+     end
+     
+     for i in fData.busList
+          id = fData.busDList[i].ID;
+          name = fData.busDList[i].Name;
+          vTemp = v0hat[i];
+          thetaTemp = getvalue(mp[:theta0][i]/pi*180)
+          push!(sol2bus,"$contingency_case,$id,$vTemp,$thetaTemp \n");
+     end
+     
+     for i in fData.brListSingle
+        idTemp = fData.brDList[i].ID;
+        revidTemp = fData.brDList[i].revID;
+        fromTemp = fData.brDList[i].From;
+        toTemp = fData.brDList[i].To;
+        name = fData.brDList[i].CKT;
+        pTemp = getvalue(mp[:p0][i])*fData.baseMVA;
+        qTemp = getvalue(mp[:q0][i])*fData.baseMVA;
+        pRevTemp = 0 #getvalue(mp[:p][revidTemp,s])*fData.baseMVA;
+        qRevTemp = 0 #getvalue(mp[:q][revidTemp,s])*fData.baseMVA;
+        push!(sol2branch,"$contingency_case,$name,$fromTemp,$toTemp,i_$(fromTemp)_$(toTemp)_$(name),$pTemp,$qTemp,$pRevTemp,$qRevTemp \n");
+     end
+end	#if contingency_case
    
 #------------------------------------------------------------------------------------------
 
-end	#contigency_case for loop   
+end	#contigency_case for loop
+
+write(sol2file, "--contingency generator \nconID,genID,busID,unitID,q(MW) \n");
+
+for line in sol2gen
+	write(sol2file, line);
+end
+
+write(sol2file,"--end of contingency generator \n--bus \ncontingency id,bus id,v(pu),theta(deg) \n");
+
+for i in fData.busList
+        id = fData.busDList[i].ID;
+        name = fData.busDList[i].Name;
+        vTemp = (v0_base[i]);
+        thetaTemp = (theta0_base[i]/pi*180);
+        write(sol2file,"0,$id,$vTemp,$thetaTemp \n");
+end
+      
+for line in sol2bus
+	write(sol2file, line);
+end
+
+write(sol2file,"--end of bus \n--Delta \ncontingency id,Delta(MW) \n");
+
+for s in 1:length(contingency_cases)-1
+        pdeltaTemp = 0 #getvalue(mp[:pdelta][s])*fData.baseMVA;
+        write(sol2file,"$s,$pdeltaTemp \n");
+end
+
+write(sol2file,"--end of Delta \n--line flow \ncontingency id,line id,origin bus id,destination bus id,circuit id,p_origin(MW),q_origin(MVar),p_destination(MW),q_destination(MVar) \n");
+
+for i in fData.brListSingle
+        idTemp = fData.brDList[i].ID;
+        revidTemp = fData.brDList[i].revID;
+        fromTemp = fData.brDList[i].From;
+        toTemp = fData.brDList[i].To;
+        name = fData.brDList[i].CKT;
+        pTemp = p0_base[i]*fData.baseMVA;
+        qTemp = q0_base[i]*fData.baseMVA;
+        pRevTemp = 0 #p0_base[revidTemp]*fData.baseMVA;
+        qRevTemp = 0 #getvalue(mp[:q0][revidTemp])*fData.baseMVA;
+        write(sol2file,"0,$name,$fromTemp,$toTemp,i_$(fromTemp)_$(toTemp)_$(name),$pTemp,$qTemp,$pRevTemp,$qRevTemp \n");
+end
+
+for line in sol2branch
+	write(sol2file, line);
+end
+
+
+write(sol2file,"--end of line flow \n")
+
+close(sol2file)   
 
 #end		#end build function, commented for offline testing
