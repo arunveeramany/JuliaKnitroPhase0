@@ -12,8 +12,8 @@ include("buildMod.jl");
 #-------------------------------------------------------------------------------
 basedata = "/home/svcarpacomp/data"
 basedata = "/data"
-#base = basedata * "/105/Phase_0_RTS96/scenario_45/"
-base = basedata * "/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
+base = basedata * "/105/Phase_0_RTS96/scenario_45/"
+#base = basedata * "/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
 
 rawFile =base * "powersystem.raw";
 genFile =base * "generator.csv";
@@ -75,7 +75,7 @@ sol2branch = String[]
 #LOOP THROUGH CONTINGENCY CASES
 #-------------------------------------------------------------------------------
 
-contingency_cases = collect(0:1);
+contingency_cases = collect(0:length(contDList));
 v0_base = [];
 p0_base = [];
 q0_base = [];
