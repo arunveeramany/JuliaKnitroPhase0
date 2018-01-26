@@ -183,7 +183,7 @@ for contingency_case in contingency_cases
 #COMPLEMENTARITY ---- CONTINGENCY CASE ONLY --- FEASIBLE BUT INSIGNIFICANT 
 #MODIFY TO CONSIDER ONE CONTINGENCY AT A TIME
 #------------------------------------------------------------------------------------------
-if contingency_case > 0
+if contingency_case == -1 # > 0
 	@variable(mp, bData[i[1]].Vmin <= vx[i in gList] <= bData[i[1]].Vmax);
 	@variable(mp, v1[i in gList] >= 0);
 	@variable(mp, v2[i in gList] >= 0);
