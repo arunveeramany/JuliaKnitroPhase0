@@ -15,9 +15,9 @@ basedata = "/data"
 base = basedata * "/105/Phase_0_RTS96/scenario_45/"
 #base = basedata * "/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
 
-rawFile =base * "powersystem.raw";
-genFile =base * "generator.csv";
-contFile=base * "contingency.csv";
+#rawFile =base * "powersystem.raw";
+#genFile =base * "generator.csv";
+#contFile=base * "contingency.csv";
 #-------------------------------------------------------------------------------
 
 
@@ -26,7 +26,7 @@ contFile=base * "contingency.csv";
 #comment 'function...end' for offline testing
 #-------------------------------------------------------------------------------
 
-#function MyJulia1(rawFile, genFile, contFile) 
+function MyJulia1(rawFile, genFile, contFile) 
 
 # written by Haoxiang Yang, Northwestern University, 404-421-0638, haoxiangyang2019@u.northwestern.edu
 # modified by Stephen Elbert, Jesse Holzer and Arun Veeramany, PNNL; Miles Lubin, Google
