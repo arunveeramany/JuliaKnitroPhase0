@@ -10,14 +10,13 @@ include("buildMod.jl");
 #-------------------------------------------------------------------------------
 #INPUTS (FOR OFFLINE TESTING)
 #-------------------------------------------------------------------------------
-basedata = "/home/svcarpacomp/data"
 basedata = "/data"
 base = basedata * "/105/Phase_0_RTS96/scenario_45/"
 #base = basedata * "/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
 
-#rawFile =base * "powersystem.raw";
-#genFile =base * "generator.csv";
-#contFile=base * "contingency.csv";
+rawFile =base * "powersystem.raw";
+genFile =base * "generator.csv";
+contFile=base * "contingency.csv";
 #-------------------------------------------------------------------------------
 
 
@@ -26,7 +25,7 @@ base = basedata * "/105/Phase_0_RTS96/scenario_45/"
 #comment 'function...end' for offline testing
 #-------------------------------------------------------------------------------
 
-function MyJulia1(rawFile, genFile, contFile) 
+#function MyJulia1(rawFile, genFile, contFile) 
 
 # written by Haoxiang Yang, Northwestern University, 404-421-0638, haoxiangyang2019@u.northwestern.edu
 # modified by Stephen Elbert, Jesse Holzer and Arun Veeramany, PNNL; Miles Lubin, Google
@@ -90,8 +89,25 @@ brList_backup = copy(brList);
 for contingency_case in contingency_cases
 
   # set up the model
-   mp = Model(solver = KnitroSolver(bar_initmu=0.12)); 
-   #mp = Model(solver = IpoptSolver());
+   #mp = Model(solver = KnitroSolver(bar_initmu=0.12)); 
+   
+   mp = Model(solver = KnitroSolver(KTR_PARAM_OUTLEV=2,  # default is 2
+   			feastol=2.25e-9, 
+   			#feastol_abs=1e-2,
+   			opttol=1e-4, 
+   			cg_maxit=10,   # formerly maxcgit
+   			maxit=400,
+   			ftol=1e-4, 
+   			#ftol_iters=3, 
+   			#pivot=1e-12,
+        #ms_enable=1,
+        #ms_maxsolves=5,
+        #ms_maxbndrange=10,
+        #ms_terminate=1,
+        #par_numthreads=24,
+        #par_concurrent_evals=0,
+   			maxtime_real=3600)); 
+   
    			
   # create the variables for the base case
   @variable(mp,bData[i].Vmin <= v0[i in bList] <= bData[i].Vmax);
@@ -102,6 +118,8 @@ for contingency_case in contingency_cases
   @variable(mp,psh0[i in bList]);
   @variable(mp,qsh0[i in bList]);
   @variable(mp,theta0[i in bList]);
+  @variable(mp,pdelta);
+  
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -169,6 +187,7 @@ for contingency_case in contingency_cases
 #EQNS 43,44 MERGED - APPARENT FLOW BOUND --- UNDO baseMVA^2 - FEASIBLE 
 #------------------------------------------------------------------------------------------
 @NLconstraint(mp,flowBound0[k in brList],p0[k]^2 + q0[k]^2 <= fData.baseMVA^2 * brData[k].t^2);
+
 #------------------------------------------------------------------------------------------
 
 
@@ -183,7 +202,7 @@ for contingency_case in contingency_cases
 #COMPLEMENTARITY ---- CONTINGENCY CASE ONLY --- FEASIBLE BUT INSIGNIFICANT 
 #MODIFY TO CONSIDER ONE CONTINGENCY AT A TIME
 #------------------------------------------------------------------------------------------
-if contingency_case == -1 # > 0
+if contingency_case > 0
 	@variable(mp, bData[i[1]].Vmin <= vx[i in gList] <= bData[i[1]].Vmax);
 	@variable(mp, v1[i in gList] >= 0);
 	@variable(mp, v2[i in gList] >= 0);
@@ -194,6 +213,9 @@ if contingency_case == -1 # > 0
 	end
 	
     #@constraint(mp, vConstr[i in gList], v0_base[i[1]] + vx[i] ==  v1[i] - v2[i]);
+    
+    @constraint(mp,recourse[l in gList], sp0[l] == sp0_base[l] + gData[l].alpha*pdelta);
+    
 end
 #------------------------------------------------------------------------------------------
 
@@ -307,7 +329,7 @@ end
 write(sol2file,"--end of bus \n--Delta \ncontingency id,Delta(MW) \n");
 
 for s in 1:length(contingency_cases)-1
-        pdeltaTemp = 0 #getvalue(mp[:pdelta][s])*fData.baseMVA;
+        pdeltaTemp = getvalue(mp[:pdelta])*fData.baseMVA;
         write(sol2file,"$s,$pdeltaTemp \n");
 end
 
@@ -335,4 +357,4 @@ write(sol2file,"--end of line flow \n")
 
 close(sol2file)   
 
-end		#end build function, commented for offline testing
+#end		#end build function, commented for offline testing
