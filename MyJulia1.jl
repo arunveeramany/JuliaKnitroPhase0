@@ -24,7 +24,7 @@ base = basedata * "/105/Phase_0_RTS96/scenario_45/"
 #LOAD DATA FROM INPUT FILES
 #comment 'function...end' for offline testing
 #-------------------------------------------------------------------------------
-
+ 
 #function MyJulia1(rawFile, genFile, contFile) 
 
 # written by Haoxiang Yang, Northwestern University, 404-421-0638, haoxiangyang2019@u.northwestern.edu
