@@ -14,9 +14,9 @@ basedata = "/data"
 base = basedata * "/105/Phase_0_RTS96/scenario_45/"
 #base = basedata * "/141982/Phase_0_IEEE14_1Scenario/scenario_1/"
 
-rawFile =base * "powersystem.raw";
-genFile =base * "generator.csv";
-contFile=base * "contingency.csv";
+#rawFile =base * "powersystem.raw";
+#genFile =base * "generator.csv";
+#contFile=base * "contingency.csv";
 #-------------------------------------------------------------------------------
 
 
